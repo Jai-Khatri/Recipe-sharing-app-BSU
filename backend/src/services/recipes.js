@@ -1,4 +1,5 @@
 import { Recipe } from "../db/models/recipe.js"
+import { Event } from "../db/models/event.js"
 
 export async function createRecipe(data,userId) {
   return await Recipe.create({
@@ -39,8 +40,14 @@ export async function updateRecipe(id,userId,data) {
 }
 
 export async function deleteRecipe(id,userId) {
-  return await Recipe.findOneAndDelete({
+  const recipe = await Recipe.findOneAndDelete({
     _id: id,
     owner: userId
   })
+
+  if (recipe) {
+    await Event.deleteMany({ recipe: recipe._id })
+  }
+
+  return recipe
 }

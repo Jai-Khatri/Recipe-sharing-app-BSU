@@ -1,7 +1,8 @@
 import { useEffect,useState } from "react"
 import "./App.css"
+import RecipePage from "./RecipePage"
 
-function App() {
+function Home() {
   const [recipes,setRecipes] = useState([])
 
   const [signupUsername,setSignupUsername] = useState("")
@@ -363,7 +364,11 @@ function App() {
               />
 
               <div className="recipeBody">
-                <h3>{recipe.title}</h3>
+                <h3>
+              <a href={`/recipes/${recipe._id}`}>
+                    {recipe.title}
+              </a>
+                </h3>
 
                 <p className="author">
                   by {recipe.owner?.username || "Unknown"}
@@ -403,6 +408,18 @@ function App() {
       </section>
     </main>
   )
+}
+
+function App() {
+  const path = window.location.pathname
+
+  const match = path.match(/^\/recipes\/([^/]+)\/?$/)
+
+  if (match) {
+    return <RecipePage recipeId={match[1]} />
+  }
+
+  return <Home />
 }
 
 export default App

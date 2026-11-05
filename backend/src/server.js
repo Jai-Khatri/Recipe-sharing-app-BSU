@@ -3,8 +3,10 @@ import express from "express"
 import cors from "cors"
 
 import { connectDb } from "./db/init.js"
+
 import authRouter from "./routes/auth.js"
 import recipesRouter from "./routes/recipes.js"
+import eventsRouter from "./routes/events.js"
 
 const app = express()
 
@@ -12,6 +14,7 @@ app.use(cors())
 app.use(express.json())
 
 app.use("/api/auth",authRouter)
+app.use("/api/recipes",eventsRouter)
 app.use("/api/recipes",recipesRouter)
 
 app.get("/api/health",(req,res) => {

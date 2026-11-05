@@ -155,3 +155,70 @@ article img {
     gap: 15px;
   }
 }
+
+.recipeBody h3 a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.detailPage {
+  max-width: 850px;
+  margin: 40px auto;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 25px;
+  color: #333;
+}
+
+.detailImage {
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.detailsCard {
+  padding: 20px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.detailsCard ul {
+  padding-left: 20px;
+  line-height: 1.8;
+}
+
+.statsSection {
+  margin-top: 35px;
+}
+
+.viewCount {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0 35px;
+}
+
+.viewCount h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: normal;
+}
+
+.viewCount p {
+  font-size: 40px;
+  font-weight: bold;
+  margin: 10px 0 0;
+}
+
+.chart {
+  max-width: 700px;
+  width: 100%;
+}
+
+.chart svg {
+  max-width: 100%;
+  height: auto;
+}
