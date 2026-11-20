@@ -21,7 +21,12 @@ const recipeSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "User",
     required: true
-  }
-}, {timestamps: true})
+  },
 
-export const Recipe = mongoose.model("Recipe",recipeSchema)
+  likes: [{
+    type: Schema.Types.ObjectId,
+    ref: "User"
+  }]
+}, { timestamps: true })
+
+export const Recipe = mongoose.model("Recipe", recipeSchema)

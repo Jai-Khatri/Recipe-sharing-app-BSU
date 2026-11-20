@@ -4,6 +4,7 @@ import RecipePage from "./RecipePage"
 
 function Home() {
   const [recipes,setRecipes] = useState([])
+  const [sort, setSort] = useState("newest")
 
   const [signupUsername,setSignupUsername] = useState("")
   const [signupEmail,setSignupEmail] = useState("")
@@ -33,12 +34,17 @@ function Home() {
     loadRecipes()
   },[])
 
-  async function loadRecipes() {
-    const response = await fetch("/api/recipes")
-    const data = await response.json()
+  async function loadRecipes(order = "newest") {
+  const response = await fetch(`/api/recipes?sort=${order}`)
+  const data = await response.json()
 
-    setRecipes(data)
+  if (!response.ok) {
+    setMessage("Could not load recipes")
+    return
   }
+
+  setRecipes(data)
+}
 
   async function signup(e) {
     e.preventDefault()
@@ -152,21 +158,10 @@ function Home() {
       return
     }
 
-    if (editingId) {
-      setRecipes(current =>
-        current.map(recipe =>
-          recipe._id === editingId ? data : recipe
-        )
-      )
-
-      setMessage("Recipe updated")
-    }
-    else {
-      setRecipes(current => [data,...current])
-      setMessage("Recipe created")
-    }
+    setMessage(editingId ? "Recipe updated" : "Recipe created")
 
     clearRecipeForm()
+    await loadRecipes(sort)
   }
 
   async function removeRecipe(id) {
@@ -351,6 +346,23 @@ function Home() {
       <section>
         <h2>Recipes</h2>
 
+        <div className="sortBar">
+  <label htmlFor="recipeSort">Sort by:</label>
+
+  <select
+    id="recipeSort"
+    value={sort}
+    onChange={e => {
+      setSort(e.target.value)
+      loadRecipes(e.target.value)
+    }}
+  >
+    <option value="newest">Newest first</option>
+    <option value="popular">Most liked</option>
+    <option value="least">Least liked</option>
+  </select>
+</div>
+
         {recipes.length === 0 && (
           <p>No recipes yet.</p>
         )}
@@ -369,6 +381,10 @@ function Home() {
                     {recipe.title}
               </a>
                 </h3>
+
+                <p className="likeCount">
+                 ♥ {recipe.likeCount || 0} likes
+                </p>
 
                 <p className="author">
                   by {recipe.owner?.username || "Unknown"}

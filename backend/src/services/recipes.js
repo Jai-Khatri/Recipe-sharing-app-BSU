@@ -1,7 +1,7 @@
 import { Recipe } from "../db/models/recipe.js"
 import { Event } from "../db/models/event.js"
 
-export async function createRecipe(data,userId) {
+export async function createRecipe(data, userId) {
   return await Recipe.create({
     title: data.title,
     ingredients: data.ingredients,
@@ -10,18 +10,64 @@ export async function createRecipe(data,userId) {
   })
 }
 
-export async function listRecipes() {
-  return await Recipe.find()
-    .populate("owner","username")
-    .sort({createdAt: -1})
+export async function listRecipes(sort = "newest") {
+  let order = { createdAt: -1 }
+
+  if (sort === "least") {
+    order = { likeCount: 1, createdAt: -1 }
+  }
+
+  if (sort === "popular") {
+    order = { likeCount: -1, createdAt: -1 }
+  }
+
+  return await Recipe.aggregate([
+    {
+      $addFields: {
+        likeCount: {
+          $size: { $ifNull: ["$likes", []] }
+        }
+      }
+    },
+    {
+      $sort: order
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "ownerInfo"
+      }
+    },
+    {
+      $unwind: {
+        path: "$ownerInfo",
+        preserveNullAndEmptyArrays: true
+      }
+    },
+    {
+      $project: {
+        title: 1,
+        ingredients: 1,
+        imageUrl: 1,
+        createdAt: 1,
+        likeCount: 1,
+        owner: {
+          _id: "$ownerInfo._id",
+          username: "$ownerInfo.username"
+        }
+      }
+    }
+  ])
 }
 
 export async function getRecipe(id) {
   return await Recipe.findById(id)
-    .populate("owner","username")
+    .populate("owner", "username")
 }
 
-export async function updateRecipe(id,userId,data) {
+export async function updateRecipe(id, userId, data) {
   return await Recipe.findOneAndUpdate(
     {
       _id: id,
@@ -36,10 +82,10 @@ export async function updateRecipe(id,userId,data) {
       new: true,
       runValidators: true
     }
-  ).populate("owner","username")
+  ).populate("owner", "username")
 }
 
-export async function deleteRecipe(id,userId) {
+export async function deleteRecipe(id, userId) {
   const recipe = await Recipe.findOneAndDelete({
     _id: id,
     owner: userId
@@ -50,4 +96,20 @@ export async function deleteRecipe(id,userId) {
   }
 
   return recipe
+}
+
+export async function likeRecipe(id, userId) {
+  return await Recipe.findByIdAndUpdate(
+    id,
+    { $addToSet: { likes: userId } },
+    { new: true }
+  )
+}
+
+export async function unlikeRecipe(id, userId) {
+  return await Recipe.findByIdAndUpdate(
+    id,
+    { $pull: { likes: userId } },
+    { new: true }
+  )
 }

@@ -222,3 +222,44 @@ article img {
   max-width: 100%;
   height: auto;
 }
+
+.sortBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.sortBar select {
+  padding: 9px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: white;
+  font: inherit;
+}
+
+.likeCount {
+  color: #666;
+  font-size: 14px;
+  margin: 10px 0;
+}
+
+.recipeLikes {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin: 15px 0;
+}
+
+.recipeLikes span {
+  font-size: 17px;
+}
+
+.recipeLikes button {
+  padding: 8px 18px;
+}
+
+.recipeLikes button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

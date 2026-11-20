@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken"
 
-export function requireAuth(req,res,next) {
+export function requireAuth(req, res, next) {
   const header = req.headers.authorization
 
   if (!header || !header.startsWith("Bearer ")) {
@@ -12,7 +12,7 @@ export function requireAuth(req,res,next) {
   const token = header.slice(7)
 
   try {
-    req.user = jwt.verify(token,process.env.JWT_SECRET)
+    req.user = jwt.verify(token, process.env.JWT_SECRET)
     next()
   }
   catch {
@@ -20,4 +20,20 @@ export function requireAuth(req,res,next) {
       message: "Invalid or expired login"
     })
   }
+}
+
+export function optionalAuth(req, res, next) {
+  const header = req.headers.authorization
+
+  if (header?.startsWith("Bearer ")) {
+    try {
+      req.user = jwt.verify(
+        header.slice(7),
+        process.env.JWT_SECRET
+      )
+    }
+    catch {}
+  }
+
+  next()
 }

@@ -6,6 +6,9 @@ function RecipePage({recipeId}) {
   const [stats,setStats] = useState(null)
   const [loading,setLoading] = useState(true)
   const [error,setError] = useState("")
+  const [likeCount, setLikeCount] = useState(0)
+  const [liked, setLiked] = useState(false)
+  const [liking, setLiking] = useState(false)
 
   const hasLoaded = useRef(false)
 
@@ -16,7 +19,13 @@ function RecipePage({recipeId}) {
 
     async function loadRecipe() {
       try {
-        const response = await fetch(`/api/recipes/${recipeId}`)
+        const token = localStorage.getItem("token")
+
+        const response = await fetch(`/api/recipes/${recipeId}`, {
+          headers: token
+            ? { Authorization: `Bearer ${token}` }
+            : {}
+        })
 
         if (!response.ok) {
           throw new Error("Recipe not found")
@@ -24,6 +33,8 @@ function RecipePage({recipeId}) {
 
         const data = await response.json()
         setRecipe(data)
+        setLikeCount(data.likeCount)
+        setLiked(data.likedByMe)
 
         const viewResponse = await fetch(`/api/recipes/${recipeId}/views`,{
           method: "POST"
@@ -46,6 +57,45 @@ function RecipePage({recipeId}) {
 
     loadRecipe()
   },[recipeId])
+
+  async function toggleLike() {
+  const token = localStorage.getItem("token")
+
+  if (!token) {
+    setError("Log in from the homepage to like recipes")
+    return
+  }
+
+  if (liking) return
+
+  setLiking(true)
+  setError("")
+
+  try {
+    const response = await fetch(`/api/recipes/${recipeId}/like`, {
+      method: liked ? "DELETE" : "POST",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      setError(data.message)
+      return
+    }
+
+    setLikeCount(data.likeCount)
+    setLiked(data.likedByMe)
+  }
+  catch {
+    setError("Could not update like")
+  }
+  finally {
+    setLiking(false)
+  }
+}
 
   if (loading) {
     return (
@@ -75,6 +125,19 @@ function RecipePage({recipeId}) {
       <p className="author">
         by {recipe.owner?.username || "Unknown"}
       </p>
+
+      <div className="recipeLikes">
+      <span>♥ {likeCount} likes</span>
+
+      <button
+        onClick={toggleLike}
+       disabled={liking}
+      >
+        {liked ? "Unlike" : "Like"}
+      </button>
+    </div>
+
+{error && <p className="message">{error}</p>}
 
       <img
         className="detailImage"
