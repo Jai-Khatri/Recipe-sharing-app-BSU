@@ -62,9 +62,9 @@ router.get("/:id", optionalAuth, async (req, res) => {
   }
 })
 
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, async (req,res) => {
   try {
-    const { title, ingredients, imageUrl } = req.body
+    const {title,ingredients,imageUrl} = req.body
 
     if (!title || !imageUrl || !Array.isArray(ingredients) || !ingredients.length) {
       return res.status(400).json({
@@ -73,11 +73,19 @@ router.post("/", requireAuth, async (req, res) => {
     }
 
     const recipe = await createRecipe(
-      { title, ingredients, imageUrl },
+      {title,ingredients,imageUrl},
       req.user.userId
     )
 
-    await recipe.populate("owner", "username")
+    await recipe.populate("owner","username")
+
+    const io = req.app.get("io")
+
+    io.emit("newRecipe",{
+      id: recipe._id.toString(),
+      title: recipe.title,
+      username: recipe.owner?.username || "Unknown"
+    })
 
     res.status(201).json(recipe)
   }

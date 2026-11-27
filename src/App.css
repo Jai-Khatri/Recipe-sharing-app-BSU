@@ -263,3 +263,62 @@ article img {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.notifications {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 300px;
+  max-width: calc(100vw - 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.notification {
+  background: white;
+  color: #222;
+  padding: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+}
+
+.notificationHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notificationHeader button {
+  background: none;
+  color: #555;
+  font-size: 22px;
+  padding: 0 4px;
+}
+
+.notification p {
+  margin: 10px 0 5px;
+  overflow-wrap: anywhere;
+}
+
+.notification small {
+  color: #666;
+}
+
+.notification a {
+  display: block;
+  margin-top: 12px;
+  color: #222;
+  font-size: 14px;
+  text-decoration: underline;
+}
+
+header .liveStatus {
+  color: #27843b;
+  font-size: 12px;
+  margin-top: 10px;
+}

@@ -1,10 +1,13 @@
 import { useEffect,useState } from "react"
+import { io } from "socket.io-client"
 import "./App.css"
 import RecipePage from "./RecipePage"
+import RecipeNotifications from "./RecipeNotifications"
 
-function Home() {
+function Home({recipeVersion,connected}) {
   const [recipes,setRecipes] = useState([])
-  const [sort, setSort] = useState("newest")
+  const [sort,setSort] = useState("newest")
+  const [listVersion,setListVersion] = useState(0)
 
   const [signupUsername,setSignupUsername] = useState("")
   const [signupEmail,setSignupEmail] = useState("")
@@ -31,20 +34,35 @@ function Home() {
   })
 
   useEffect(() => {
+    const controller = new AbortController()
+
+    async function loadRecipes() {
+      try {
+        const response = await fetch(`/api/recipes?sort=${sort}`,{
+          signal: controller.signal
+        })
+
+        if (!response.ok) {
+          throw new Error("Could not load recipes")
+        }
+
+        const data = await response.json()
+
+        if (!controller.signal.aborted) {
+          setRecipes(data)
+        }
+      }
+      catch (error) {
+        if (error.name !== "AbortError") {
+          setMessage("Could not load recipes")
+        }
+      }
+    }
+
     loadRecipes()
-  },[])
 
-  async function loadRecipes(order = "newest") {
-  const response = await fetch(`/api/recipes?sort=${order}`)
-  const data = await response.json()
-
-  if (!response.ok) {
-    setMessage("Could not load recipes")
-    return
-  }
-
-  setRecipes(data)
-}
+    return () => controller.abort()
+  },[sort,recipeVersion,listVersion])
 
   async function signup(e) {
     e.preventDefault()
@@ -161,7 +179,7 @@ function Home() {
     setMessage(editingId ? "Recipe updated" : "Recipe created")
 
     clearRecipeForm()
-    await loadRecipes(sort)
+    setListVersion(current => current + 1)
   }
 
   async function removeRecipe(id) {
@@ -188,6 +206,7 @@ function Home() {
     }
 
     setMessage("Recipe deleted")
+    setListVersion(current => current + 1)
   }
 
   function editRecipe(recipe) {
@@ -223,11 +242,18 @@ function Home() {
         <div>
           <h1>Recipe Share</h1>
           <p>Save and share your favorite recipes.</p>
+
+          <p className="liveStatus">
+            {connected
+              ? "● Live updates connected"
+              : "○ Connecting..."}
+          </p>
         </div>
 
         {user && (
           <div className="userBar">
             <span>{user.username}</span>
+
             <button className="secondary" onClick={logout}>
               Logout
             </button>
@@ -347,21 +373,18 @@ function Home() {
         <h2>Recipes</h2>
 
         <div className="sortBar">
-  <label htmlFor="recipeSort">Sort by:</label>
+          <label htmlFor="recipeSort">Sort by:</label>
 
-  <select
-    id="recipeSort"
-    value={sort}
-    onChange={e => {
-      setSort(e.target.value)
-      loadRecipes(e.target.value)
-    }}
-  >
-    <option value="newest">Newest first</option>
-    <option value="popular">Most liked</option>
-    <option value="least">Least liked</option>
-  </select>
-</div>
+          <select
+            id="recipeSort"
+            value={sort}
+            onChange={e => setSort(e.target.value)}
+          >
+            <option value="newest">Newest first</option>
+            <option value="popular">Most liked</option>
+            <option value="least">Least liked</option>
+          </select>
+        </div>
 
         {recipes.length === 0 && (
           <p>No recipes yet.</p>
@@ -377,13 +400,13 @@ function Home() {
 
               <div className="recipeBody">
                 <h3>
-              <a href={`/recipes/${recipe._id}`}>
+                  <a href={`/recipes/${recipe._id}`}>
                     {recipe.title}
-              </a>
+                  </a>
                 </h3>
 
                 <p className="likeCount">
-                 ♥ {recipe.likeCount || 0} likes
+                  ♥ {recipe.likeCount || 0} likes
                 </p>
 
                 <p className="author">
@@ -427,15 +450,76 @@ function Home() {
 }
 
 function App() {
-  const path = window.location.pathname
+  const [notifications,setNotifications] = useState([])
+  const [recipeVersion,setRecipeVersion] = useState(0)
+  const [connected,setConnected] = useState(false)
 
-  const match = path.match(/^\/recipes\/([^/]+)\/?$/)
+  useEffect(() => {
+    const socket = io({
+      autoConnect: false,
+      transports: ["websocket"]
+    })
 
-  if (match) {
-    return <RecipePage recipeId={match[1]} />
+    function onConnect() {
+      setConnected(true)
+      setRecipeVersion(current => current + 1)
+    }
+
+    function onDisconnect() {
+      setConnected(false)
+    }
+
+    function onNewRecipe(recipe) {
+      setNotifications(current => [
+        recipe,
+        ...current.filter(item => item.id !== recipe.id)
+      ].slice(0,5))
+
+      setRecipeVersion(current => current + 1)
+    }
+
+    socket.on("connect",onConnect)
+    socket.on("disconnect",onDisconnect)
+    socket.on("connect_error",onDisconnect)
+    socket.on("newRecipe",onNewRecipe)
+
+    socket.connect()
+
+    return () => {
+      socket.off("connect",onConnect)
+      socket.off("disconnect",onDisconnect)
+      socket.off("connect_error",onDisconnect)
+      socket.off("newRecipe",onNewRecipe)
+      socket.disconnect()
+    }
+  },[])
+
+  function dismissNotification(id) {
+    setNotifications(current =>
+      current.filter(recipe => recipe.id !== id)
+    )
   }
 
-  return <Home />
+  const path = window.location.pathname
+  const match = path.match(/^\/recipes\/([^/]+)\/?$/)
+
+  return (
+    <>
+      {match ? (
+        <RecipePage recipeId={match[1]} />
+      ) : (
+        <Home
+          recipeVersion={recipeVersion}
+          connected={connected}
+        />
+      )}
+
+      <RecipeNotifications
+        notifications={notifications}
+        onDismiss={dismissNotification}
+      />
+    </>
+  )
 }
 
 export default App
